@@ -11,6 +11,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,26 +31,48 @@ class MainActivity : AppCompatActivity() {
         val addButton = findViewById<Button>(R.id.addButton)
         val container = findViewById<LinearLayout>(R.id.taskContainer)
 
-        // The task being edited
-        var editingTask: CheckBox? = null
+        val dao = AppDatabase.create(this).taskDao()           // Room (local)
+        val cloud = FirebaseFirestore.getInstance().collection("tasks") // Firebase (cloud)
 
-        // A function that creates one task and adds it to the container
-        fun addTask(text: String) {
-            val task = CheckBox(this)
-            task.text = text
-            task.textSize = 18f
+        // The task being edited
+        var editingTask: Task? = null
+        var editingView: CheckBox? = null
+
+        // Save = create or update, in Room and in Firebase
+        fun save(task: Task) {
+            lifecycleScope.launch { dao.save(task) }
+            cloud.document(task.id).set(task)
+        }
+
+        // A function that shows one task and adds it to the container
+        fun showTask(initial: Task) {
+            var task = initial
+            val view = CheckBox(this)
+            view.text = task.text
+            view.isChecked = task.done
+            view.textSize = 18f
+
+            // UPDATE: tick the checkbox
+            view.setOnCheckedChangeListener { _, checked ->
+                task = task.copy(done = checked)
+                save(task)
+            }
 
             // Long-press the task: Edit or Delete
-            task.setOnLongClickListener {
+            view.setOnLongClickListener {
                 AlertDialog.Builder(this)
                     .setItems(arrayOf("Edit", "Delete")) { _, which ->
                         if (which == 0) {
                             taskInput.setText(task.text)
                             taskInput.setSelection(taskInput.text.length)
                             editingTask = task
+                            editingView = view
                             addButton.text = "Save"
                         } else {
-                            container.removeView(task)   // DELETE
+                            // DELETE
+                            lifecycleScope.launch { dao.delete(task) }
+                            cloud.document(task.id).delete()
+                            container.removeView(view)
                             editingTask = null
                             addButton.text = "Add"
                             taskInput.text.clear()
@@ -56,12 +82,19 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
-            container.addView(task)
+            // Editing replaces the task text
+            view.tag = { newText: String ->
+                task = task.copy(text = newText)
+                view.text = newText
+                save(task)
+            }
+
+            container.addView(view)
         }
 
-        val startingTasks = listOf("Prepare lunch", "Play tennis")
-        for (name in startingTasks) {
-            addTask(name)
+        // READ: load the saved tasks from Room
+        lifecycleScope.launch {
+            dao.getAll().forEach { showTask(it) }
         }
 
         addButton.setOnClickListener {
@@ -71,13 +104,17 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Write a task first", Toast.LENGTH_SHORT).show()
             } else if (editingTask != null) {
                 // UPDATE
-                editingTask!!.text = text
+                @Suppress("UNCHECKED_CAST")
+                (editingView!!.tag as (String) -> Unit)(text)
                 editingTask = null
+                editingView = null
                 addButton.text = "Add"
                 taskInput.text.clear()
             } else {
                 // CREATE
-                addTask(text)
+                val task = Task(UUID.randomUUID().toString(), text)
+                save(task)
+                showTask(task)
                 taskInput.text.clear()
             }
         }
