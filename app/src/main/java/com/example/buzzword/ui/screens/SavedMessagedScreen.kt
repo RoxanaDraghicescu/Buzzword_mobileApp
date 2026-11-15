@@ -13,12 +13,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Star
@@ -231,7 +234,8 @@ private fun AddSavedMessageSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            modifier = Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column {
@@ -251,7 +255,7 @@ private fun AddSavedMessageSheet(
                 value = title,
                 onValueChange = { if (it.length <= SavedMessagesViewModel.MAX_TITLE_LENGTH) title = it },
                 label = { Text("Title") },
-                placeholder = { Text("Wi-Fi") },
+                placeholder = { Text("e.g. Wi-Fi") },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
@@ -261,7 +265,7 @@ private fun AddSavedMessageSheet(
                 // Don't let the user type past 32 characters
                 onValueChange = { if (it.length <= SavedMessagesViewModel.MAX_TEXT_LENGTH) text = it },
                 label = { Text("Message") },
-                placeholder = { Text("WIFI: table42") },
+                placeholder = { Text("e.g. table42") },
                 textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
                 supportingText = {
                     Text(
@@ -310,7 +314,8 @@ private fun EditSavedMessageSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            modifier = Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
@@ -322,6 +327,7 @@ private fun EditSavedMessageSheet(
                 value = title,
                 onValueChange = { if (it.length <= SavedMessagesViewModel.MAX_TITLE_LENGTH) title = it },
                 label = { Text("Title") },
+                placeholder = { Text("e.g. Wi-Fi") },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
@@ -330,6 +336,7 @@ private fun EditSavedMessageSheet(
                 value = text,
                 onValueChange = { if (it.length <= SavedMessagesViewModel.MAX_TEXT_LENGTH) text = it },
                 label = { Text("Message") },
+                placeholder = { Text("e.g. table42") },
                 textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
                 supportingText = {
                     Text(
