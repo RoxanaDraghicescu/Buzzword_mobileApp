@@ -28,7 +28,18 @@ class SavedMessagesViewModel(private val dao: SavedMessageDao) : ViewModel() {
         }
     }
 
-    // Person 1 (Day 2): add update(message) and delete(message) here.
+    /** Update: saves the edited message (same id, new title and text). */
+    fun update(message: SavedMessage) {
+        if (validate(message.title, message.text) != null) return
+        viewModelScope.launch {
+            dao.update(message.copy(title = message.title.trim(), text = message.text.trim()))
+        }
+    }
+
+    /** Delete: removes the message. */
+    fun delete(message: SavedMessage) {
+        viewModelScope.launch { dao.delete(message) }
+    }
 
     companion object {
         const val MAX_TEXT_LENGTH = 32 // project doc: messages are at most 32 characters
