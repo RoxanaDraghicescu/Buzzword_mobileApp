@@ -53,6 +53,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.buzzword.SavedMessagesViewModel
 import com.example.buzzword.data.SavedMessage
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 
 /** Saved messages screen: Create (the "New message" button) and Read (the cards). */
 @Composable
@@ -61,6 +66,8 @@ fun SavedMessagesScreen(
 ) {
     val messages by viewModel.savedMessages.collectAsStateWithLifecycle()
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
+    var editingId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val editing = messages.find { it.id == editingId }
 
     Box(Modifier.fillMaxSize()) {
         if (messages.isEmpty()) {
@@ -68,7 +75,7 @@ fun SavedMessagesScreen(
         } else {
             SavedMessagesList(
                 messages = messages,
-                onMessageClick = { /* Person 1 (Day 2): open the message to edit or delete it */ },
+                onMessageClick = { editingId = it.id },
             )
             ExtendedFloatingActionButton(
                 onClick = { showAddSheet = true },
@@ -85,6 +92,15 @@ fun SavedMessagesScreen(
         AddSavedMessageSheet(
             onDismiss = { showAddSheet = false },
             onSave = { title, text -> viewModel.add(title, text) },
+        )
+    }
+
+    if (editing != null) {
+        EditSavedMessageSheet(
+            message = editing,
+            onDismiss = { editingId = null },
+            onSave = { title, text -> viewModel.update(editing.copy(title = title, text = text)) },
+            onDelete = { viewModel.delete(editing) },
         )
     }
 }
@@ -270,5 +286,101 @@ private fun AddSavedMessageSheet(
                 Text("Save message")
             }
         }
+    }
+}
+
+/** Edit sheet: same form as the add sheet, plus a Delete button that asks first. */
+@Composable
+private fun EditSavedMessageSheet(
+    message: SavedMessage,
+    onDismiss: () -> Unit,
+    onSave: (title: String, text: String) -> Unit,
+    onDelete: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    var title by rememberSaveable { mutableStateOf(message.title) }
+    var text by rememberSaveable { mutableStateOf(message.text) }
+    var askingToDelete by rememberSaveable { mutableStateOf(false) }
+    val canSave = SavedMessagesViewModel.validate(title, text) == null
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                "Edit message",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedTextField(
+                value = title,
+                onValueChange = { if (it.length <= SavedMessagesViewModel.MAX_TITLE_LENGTH) title = it },
+                label = { Text("Title") },
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = text,
+                onValueChange = { if (it.length <= SavedMessagesViewModel.MAX_TEXT_LENGTH) text = it },
+                label = { Text("Message") },
+                textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
+                supportingText = {
+                    Text(
+                        "${text.length} / ${SavedMessagesViewModel.MAX_TEXT_LENGTH}",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                    )
+                },
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = {
+                    onSave(title, text)
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
+                },
+                enabled = canSave,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Text("Save changes")
+            }
+            OutlinedButton(
+                onClick = { askingToDelete = true },
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Delete message")
+            }
+        }
+    }
+
+    if (askingToDelete) {
+        AlertDialog(
+            onDismissRequest = { askingToDelete = false },
+            title = { Text("Delete this message?") },
+            text = { Text("\"${message.title}\" will be removed from your saved messages.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    askingToDelete = false
+                    onDelete()
+                    onDismiss()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { askingToDelete = false }) { Text("Cancel") }
+            },
+        )
     }
 }
