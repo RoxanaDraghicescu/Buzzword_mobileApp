@@ -1,56 +1,109 @@
 package com.example.buzzword.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 // Week 1: these screens exist so navigation works. Their content comes later.
 
 @Composable
-fun TableScreen() = PlaceholderScreen(
-    title = "Who is at the table",
-    comingNext = "List of phones and the Open / Secure switch (weeks 5-6).",
+fun TableScreen() = ComingSoonScreen(
+    icon = Icons.Outlined.Phone,
+    title = "Who's at the table",
+    description = "Phones lying on the table will show up here, with a switch between Open and Secure mode.",
+    week = "week 6",
 )
 
 @Composable
-fun WriteScreen() = PlaceholderScreen(
+fun WriteScreen() = ComingSoonScreen(
+    icon = Icons.Outlined.Edit,
     title = "Write a message",
-    comingNext = "Message box with a 32-character counter, recipient, pick a saved message (week 2).",
+    description = "Type up to 32 characters, pick who it's for, and flip your phone to send it.",
+    week = "week 2",
 )
 
 @Composable
-fun ReceiveScreen() = PlaceholderScreen(
-    title = "Received messages",
-    comingNext = "History of received messages and the live buzz graph (weeks 2-3).",
+fun ReceiveScreen() = ComingSoonScreen(
+    icon = Icons.Outlined.Email,
+    title = "Nothing received yet",
+    description = "Messages felt through the table will appear here letter by letter, with a live graph.",
+    week = "week 2",
 )
 
 @Composable
-fun SettingsScreen() = PlaceholderScreen(
+fun SettingsScreen() = ComingSoonScreen(
+    icon = Icons.Outlined.Settings,
     title = "Settings",
-    comingNext = "Choose error correction: Off, Repetition x3, Hamming (week 5).",
+    description = "Choose how errors are fixed: Off, Repetition ×3 or Hamming.",
+    week = "week 5",
 )
 
+/** Big round icon used on empty screens. */
 @Composable
-private fun PlaceholderScreen(title: String, comingNext: String) {
+fun IconBadge(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(96.dp)
+            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(44.dp),
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun ComingSoonScreen(icon: ImageVector, title: String, description: String, week: String) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(title, style = MaterialTheme.typography.headlineSmall)
+        IconBadge(icon)
+        Spacer(Modifier.height(24.dp))
+        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
         Text(
-            comingNext,
+            description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        Spacer(Modifier.height(20.dp))
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+            Text(
+                "Coming in $week",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            )
+        }
     }
 }

@@ -1,23 +1,41 @@
 package com.example.buzzword.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,13 +47,19 @@ import com.example.buzzword.ui.screens.SettingsScreen
 import com.example.buzzword.ui.screens.TableScreen
 import com.example.buzzword.ui.screens.WriteScreen
 
-/** The screens of the app. "route" is the name navigation uses to find each one. */
-enum class Screen(val route: String, val label: String, val icon: ImageVector) {
-    Table("table", "Table", Icons.Default.Home),
-    Saved("saved", "Saved", Icons.Default.Star),
-    Write("write", "Write", Icons.Default.Edit),
-    Receive("receive", "Receive", Icons.Default.Email),
-    Settings("settings", "Settings", Icons.Default.Settings),
+/** The screens of the app. Filled icon when selected, outlined when not. */
+enum class Screen(
+    val route: String,
+    val label: String,
+    val title: String,
+    val selectedIcon: ImageVector,
+    val icon: ImageVector,
+) {
+    Table("table", "Table", "Buzzword", Icons.Filled.Home, Icons.Outlined.Home),
+    Saved("saved", "Saved", "Saved messages", Icons.Filled.Star, Icons.Outlined.Star),
+    Write("write", "Write", "Write", Icons.Filled.Edit, Icons.Outlined.Edit),
+    Receive("receive", "Inbox", "Received", Icons.Filled.Email, Icons.Outlined.Email),
+    Settings("settings", "Settings", "Settings", Icons.Filled.Settings, Icons.Outlined.Settings),
 }
 
 /** "User interface" box from the component diagram: top bar, bottom bar, and the NavHost. */
@@ -46,14 +70,25 @@ fun BuzzwordNavHost() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val currentScreen = Screen.entries.find { it.route == currentRoute } ?: Screen.Table
+    val colors = MaterialTheme.colorScheme
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(currentScreen.label) }) },
+        containerColor = colors.background,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    if (currentScreen == Screen.Table) BrandTitle()
+                    else Text(currentScreen.title, fontWeight = FontWeight.SemiBold)
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background),
+            )
+        },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = colors.surfaceContainer) {
                 Screen.entries.forEach { screen ->
+                    val selected = currentRoute == screen.route
                     NavigationBarItem(
-                        selected = currentRoute == screen.route,
+                        selected = selected,
                         onClick = {
                             navController.navigate(screen.route) {
                                 // Keep one copy of each screen on the back stack.
@@ -62,8 +97,25 @@ fun BuzzwordNavHost() {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(screen.icon, contentDescription = screen.label) },
-                        label = { Text(screen.label) },
+                        icon = {
+                            Icon(
+                                if (selected) screen.selectedIcon else screen.icon,
+                                contentDescription = screen.label,
+                            )
+                        },
+                        label = {
+                            Text(
+                                screen.label,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = colors.primaryContainer,
+                            selectedIconColor = colors.onPrimaryContainer,
+                            selectedTextColor = colors.onSurface,
+                            unselectedIconColor = colors.onSurfaceVariant,
+                            unselectedTextColor = colors.onSurfaceVariant,
+                        ),
                     )
                 }
             }
@@ -80,5 +132,19 @@ fun BuzzwordNavHost() {
             composable(Screen.Receive.route) { ReceiveScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
         }
+    }
+}
+
+/** App name with a small orange dot, shown on the main screen. */
+@Composable
+private fun BrandTitle() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(10.dp)
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("Buzzword", fontWeight = FontWeight.Bold)
     }
 }
