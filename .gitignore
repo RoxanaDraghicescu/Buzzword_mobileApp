@@ -15,3 +15,5 @@
 local.properties
 __pycache__/
 .kotlin
+
+/.idea/
