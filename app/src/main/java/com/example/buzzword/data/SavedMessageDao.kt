@@ -2,6 +2,8 @@ package com.example.buzzword.data
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.Delete
+import androidx.room.Update
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
@@ -17,7 +19,11 @@ interface SavedMessageDao {
     @Query("SELECT * FROM saved_messages ORDER BY id DESC")
     fun getAll(): Flow<List<SavedMessage>>
 
-    // Person 1 (Day 2): add update and delete here, for example
-    //   @Update suspend fun update(message: SavedMessage)
-    //   @Delete suspend fun delete(message: SavedMessage)
+    /** Update: overwrites the row with the same id. */
+    @Update
+    suspend fun update(message: SavedMessage)
+
+    /** Delete: removes the row with this id. */
+    @Delete
+    suspend fun delete(message: SavedMessage)
 }
