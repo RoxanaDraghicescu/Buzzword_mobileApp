@@ -16,8 +16,23 @@
         android:theme="@style/Theme.Buzzword">
 
         <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Buzzword"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Lab tool: record the accelerometer while buzzing -->
+        <activity
             android:name=".CaptureActivity"
-            android:exported="true">
+            android:exported="true"
+            android:label="Buzzword Capture">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
