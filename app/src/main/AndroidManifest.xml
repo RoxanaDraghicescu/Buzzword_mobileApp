@@ -28,16 +28,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Lab tool: record the accelerometer while buzzing -->
+        <!-- Lab tool, opened from the button in the top bar -->
         <activity
             android:name=".CaptureActivity"
-            android:exported="true"
-            android:label="Buzzword Capture">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:label="Capture tool" />
     </application>
 
 </manifest>

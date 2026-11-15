@@ -8,15 +8,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.buzzword.ui.theme.BuzzwordTheme
 import java.io.File
 
 // test screen: record the accelerometer, buzz a pattern, save a CSV
@@ -37,18 +39,20 @@ class CaptureActivity : ComponentActivity() {
         sensorHub.onSample = { sample -> samples.add(sample) }
 
         setContent {
-            MaterialTheme {
-                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { if (isRecording) stopAndSave() else startRecording() }) {
-                        Text(if (isRecording) "Stop and save" else "Start recording")
+            BuzzwordTheme {
+                Surface(Modifier.fillMaxSize()) {
+                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = { if (isRecording) stopAndSave() else startRecording() }) {
+                            Text(if (isRecording) "Stop and save" else "Start recording")
+                        }
+                        Button(onClick = { changeBitLength() }) {
+                            Text("Bit length: $bitLengthMillis ms (tap to change)")
+                        }
+                        Button(onClick = { playTestPattern() }, enabled = isRecording) {
+                            Text("Buzz test (this phone)")
+                        }
+                        Text(statusText)
                     }
-                    Button(onClick = { changeBitLength() }) {
-                        Text("Bit length: $bitLengthMillis ms (tap to change)")
-                    }
-                    Button(onClick = { playTestPattern() }, enabled = isRecording) {
-                        Text("Buzz test (this phone)")
-                    }
-                    Text(statusText)
                 }
             }
         }

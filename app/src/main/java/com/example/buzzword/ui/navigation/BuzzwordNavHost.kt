@@ -1,5 +1,6 @@
 package com.example.buzzword.ui.navigation
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,11 +18,13 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -34,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -41,6 +45,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.buzzword.CaptureActivity
 import com.example.buzzword.ui.screens.ReceiveScreen
 import com.example.buzzword.ui.screens.SavedMessagesScreen
 import com.example.buzzword.ui.screens.SettingsScreen
@@ -71,6 +76,7 @@ fun BuzzwordNavHost() {
     val currentRoute = backStackEntry?.destination?.route
     val currentScreen = Screen.entries.find { it.route == currentRoute } ?: Screen.Table
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
 
     Scaffold(
         containerColor = colors.background,
@@ -79,6 +85,12 @@ fun BuzzwordNavHost() {
                 title = {
                     if (currentScreen == Screen.Table) BrandTitle()
                     else Text(currentScreen.title, fontWeight = FontWeight.SemiBold)
+                },
+                actions = {
+                    // Lab tool: record the accelerometer while buzzing
+                    IconButton(onClick = { context.startActivity(Intent(context, CaptureActivity::class.java)) }) {
+                        Icon(Icons.Outlined.Phone, contentDescription = "Open capture tool")
+                    }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background),
             )
