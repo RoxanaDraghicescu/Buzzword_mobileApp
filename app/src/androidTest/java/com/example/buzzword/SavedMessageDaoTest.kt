@@ -49,4 +49,37 @@ class SavedMessageDaoTest {
         reopened.close()
         context.deleteDatabase(name)
     }
+
+    /** Update: the same row gets the new text, nothing new is added. */
+    @Test
+    fun update_changesTheSameRow() = runBlocking<Unit> {
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        val dao = db.savedMessageDao()
+        dao.add(SavedMessage(title = "Wi-Fi", text = "WIFI: table42"))
+        val saved = dao.getAll().first()[0]
+
+        dao.update(saved.copy(text = "WIFI: table43"))
+
+        val all = dao.getAll().first()
+        assertEquals(1, all.size)
+        assertEquals("WIFI: table43", all[0].text)
+        db.close()
+    }
+
+    /** Delete: only the chosen message disappears. */
+    @Test
+    fun delete_removesOnlyThatMessage() = runBlocking<Unit> {
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        val dao = db.savedMessageDao()
+        dao.add(SavedMessage(title = "Wi-Fi", text = "WIFI: table42"))
+        dao.add(SavedMessage(title = "Door", text = "Code 1234"))
+        val door = dao.getAll().first().first { it.title == "Door" }
+
+        dao.delete(door)
+
+        val all = dao.getAll().first()
+        assertEquals(1, all.size)
+        assertEquals("Wi-Fi", all[0].title)
+        db.close()
+    }
 }
