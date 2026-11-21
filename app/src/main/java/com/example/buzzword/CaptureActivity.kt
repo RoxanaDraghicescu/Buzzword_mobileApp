@@ -28,14 +28,17 @@ class CaptureActivity : ComponentActivity() {
     private var recordingStartNanos = 0L
     private var patternStartNanos = -1L   // -1 = not played yet
 
-    private val testPattern = "10101100".repeat(3)
-    private var bitLengthMillis by mutableStateOf(100L)
+    private lateinit var vibrationMotor: VibrationMotor
+    private val testData = "0001001011011101"   // 16 test bits, unlike the start pattern
+    private val testPattern = Decoder.START_PATTERN + testData
+    private var bitLengthMillis by mutableStateOf(Decoder.BIT_LENGTH_MILLIS)
     private var isRecording by mutableStateOf(false)
     private var statusText by mutableStateOf("Phone on the table, then Start.")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sensorHub = SensorHub(this)
+        vibrationMotor = VibrationMotor(this)
         sensorHub.onSample = { sample -> samples.add(sample) }
 
         setContent {
@@ -60,7 +63,7 @@ class CaptureActivity : ComponentActivity() {
 
     // cycle bit length: 100 - 150 - 200 ms
     private fun changeBitLength() {
-        bitLengthMillis = if (bitLengthMillis == 200L) 100L else bitLengthMillis + 50
+        bitLengthMillis = if (bitLengthMillis == 200L) 100L else bitLengthMillis + 50   // 100 -> 150 -> 200
     }
 
     private fun startRecording() {
@@ -74,13 +77,7 @@ class CaptureActivity : ComponentActivity() {
 
     // buzz the pattern: 1 = motor on for 70% of the bit, 0 = off
     private fun playTestPattern() {
-        val motorOnMillis = bitLengthMillis * 7 / 10
-        val timings = listOf(0L) + testPattern.flatMap { bit ->
-            if (bit == '1') listOf(motorOnMillis, bitLengthMillis - motorOnMillis)
-            else listOf(0L, bitLengthMillis)
-        }
-        val vibrator = getSystemService(Vibrator::class.java)
-        vibrator.vibrate(VibrationEffect.createWaveform(timings.toLongArray(), -1))
+        vibrationMotor.playBits(testPattern, bitLengthMillis)
         patternStartNanos = SystemClock.elapsedRealtimeNanos()
         statusText = "Buzzing... then Stop and save."
     }
@@ -113,7 +110,17 @@ class CaptureActivity : ComponentActivity() {
         }
         val recordedSeconds = ((samples.lastOrNull()?.timeNanos ?: recordingStartNanos) - recordingStartNanos) / 1e9
         val samplesPerSecond = if (recordedSeconds > 0) (samples.size / recordedSeconds).toInt() else 0
-        statusText = "Saved ${samples.size} samples ($samplesPerSecond per second)\n$fileName"
+        statusText = "Saved ${samples.size} samples ($samplesPerSecond per second)\n$fileName\n\n" +
+                decodeRecording()
+    }
+
+    // Decode this recording and compare with what was sent
+    private fun decodeRecording(): String {
+        val bits = Decoder(bitLengthMillis).decode(samples, testData.length) ?: return "Start pattern not found."
+        val startRead = bits.take(8)
+        val dataRead = bits.drop(8)
+        val rightBits = testData.indices.count { testData[it] == dataRead[it] }
+        return "Start pattern: $startRead (want 10101100)\nSent: $testData\nGot:  $dataRead\n$rightBits of 16 right"
     }
 
     // stop recording when the app leaves the screen
