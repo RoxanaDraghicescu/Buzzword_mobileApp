@@ -29,8 +29,8 @@ class CaptureActivity : ComponentActivity() {
     private var patternStartNanos = -1L   // -1 = not played yet
 
     private lateinit var vibrationMotor: VibrationMotor
-    private val testData = "0001001011011101"   // 16 test bits, unlike the start pattern
-    private val testPattern = Decoder.START_PATTERN + testData
+    private val testMessage = "HELLO"   // default test: seat 1 -> seat 2
+    private val testPattern = Encoder().encode(testMessage, from = 1, to = 2)
     private var bitLengthMillis by mutableStateOf(Decoder.BIT_LENGTH_MILLIS)
     private var isRecording by mutableStateOf(false)
     private var statusText by mutableStateOf("Phone on the table, then Start.")
@@ -45,6 +45,7 @@ class CaptureActivity : ComponentActivity() {
             BuzzwordTheme {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Test message: \"$testMessage\" (about ${buzzSeconds()} s at $bitLengthMillis ms)")
                         Button(onClick = { if (isRecording) stopAndSave() else startRecording() }) {
                             Text(if (isRecording) "Stop and save" else "Start recording")
                         }
@@ -52,7 +53,7 @@ class CaptureActivity : ComponentActivity() {
                             Text("Bit length: $bitLengthMillis ms (tap to change)")
                         }
                         Button(onClick = { playTestPattern() }, enabled = isRecording) {
-                            Text("Buzz test (this phone)")
+                            Text("Buzz \"$testMessage\" (this phone)")
                         }
                         Text(statusText)
                     }
@@ -66,20 +67,23 @@ class CaptureActivity : ComponentActivity() {
         bitLengthMillis = if (bitLengthMillis == 200L) 100L else bitLengthMillis + 50   // 100 -> 150 -> 200
     }
 
+    // how long the test message buzzes, in seconds
+    private fun buzzSeconds() = testPattern.length * bitLengthMillis / 1000
+
     private fun startRecording() {
         samples.clear()
         patternStartNanos = -1L
         recordingStartNanos = SystemClock.elapsedRealtimeNanos()
         sensorHub.start()
         isRecording = true
-        statusText = "Recording... wait 2 s, then Buzz test."
+        statusText = "Recording... wait 2 s, then Buzz \"$testMessage\"."
     }
 
     // buzz the pattern: 1 = motor on for 70% of the bit, 0 = off
     private fun playTestPattern() {
         vibrationMotor.playBits(testPattern, bitLengthMillis)
         patternStartNanos = SystemClock.elapsedRealtimeNanos()
-        statusText = "Buzzing... then Stop and save."
+        statusText = "Buzzing \"$testMessage\"... wait ${buzzSeconds() + 1} s, then Stop and save."
     }
 
     // 1 if this phone's motor was on at that time
@@ -114,13 +118,18 @@ class CaptureActivity : ComponentActivity() {
                 decodeRecording()
     }
 
-    // Decode this recording and compare with what was sent
+    // Decode the message in this recording
     private fun decodeRecording(): String {
-        val bits = Decoder(bitLengthMillis).decode(samples, testData.length) ?: return "Start pattern not found."
-        val startRead = bits.take(8)
-        val dataRead = bits.drop(8)
-        val rightBits = testData.indices.count { testData[it] == dataRead[it] }
-        return "Start pattern: $startRead (want 10101100)\nSent: $testData\nGot:  $dataRead\n$rightBits of 16 right"
+        val decoder = Decoder(bitLengthMillis)
+        // 1) Header first, to learn how many letters follow
+        val header = decoder.decode(samples, Encoder.HEADER_BITS)?.drop(8) ?: return "No message found."
+        val from = header.substring(3, 7).toInt(2)
+        val to = header.substring(7, 11).toInt(2)
+        val letterCount = header.substring(11, 16).toInt(2) + 1
+        // 2) Whole frame, then the text after the header
+        val frame = decoder.decode(samples, Encoder.HEADER_BITS + 6 * letterCount) ?: return "No message found."
+        val text = Encoder.bitsToText(frame.drop(8 + Encoder.HEADER_BITS))
+        return "Received from seat $from to seat $to: \"$text\""
     }
 
     // stop recording when the app leaves the screen
