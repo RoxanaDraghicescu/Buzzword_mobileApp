@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
@@ -46,13 +47,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.buzzword.CaptureActivity
+import com.example.buzzword.ChatViewModel
+import com.example.buzzword.ui.screens.DiagnosticsScreen
 import com.example.buzzword.ui.screens.ReceiveScreen
 import com.example.buzzword.ui.screens.SavedMessagesScreen
 import com.example.buzzword.ui.screens.SettingsScreen
 import com.example.buzzword.ui.screens.TableScreen
 import com.example.buzzword.ui.screens.WriteScreen
 
-/** The screens of the app. Filled icon when selected, outlined when not. */
+/** The screens in the bottom bar. Filled icon when selected, outlined when not. */
 enum class Screen(
     val route: String,
     val label: String,
@@ -67,13 +70,17 @@ enum class Screen(
     Settings("settings", "Settings", "Settings", Icons.Filled.Settings, Icons.Outlined.Settings),
 }
 
+/** Diagnostics is opened from Settings, so it is not in the bottom bar. */
+const val DIAGNOSTICS_ROUTE = "diagnostics"
+
 /** "User interface" box from the component diagram: top bar, bottom bar, and the NavHost. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BuzzwordNavHost() {
+fun BuzzwordNavHost(chatViewModel: ChatViewModel) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val onDiagnostics = currentRoute == DIAGNOSTICS_ROUTE
     val currentScreen = Screen.entries.find { it.route == currentRoute } ?: Screen.Table
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -83,13 +90,23 @@ fun BuzzwordNavHost() {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    if (currentScreen == Screen.Table) BrandTitle()
-                    else Text(currentScreen.title, fontWeight = FontWeight.SemiBold)
+                    when {
+                        onDiagnostics -> Text("Diagnostics", fontWeight = FontWeight.SemiBold)
+                        currentScreen == Screen.Table -> BrandTitle()
+                        else -> Text(currentScreen.title, fontWeight = FontWeight.SemiBold)
+                    }
                 },
                 actions = {
-                    // Lab tool: record the accelerometer while buzzing
+                    // Person 1's lab tool: record the accelerometer while buzzing
                     IconButton(onClick = { context.startActivity(Intent(context, CaptureActivity::class.java)) }) {
                         Icon(Icons.Outlined.Phone, contentDescription = "Open capture tool")
+                    }
+                },
+                navigationIcon = {
+                    if (onDiagnostics) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background),
@@ -98,7 +115,8 @@ fun BuzzwordNavHost() {
         bottomBar = {
             NavigationBar(containerColor = colors.surfaceContainer) {
                 Screen.entries.forEach { screen ->
-                    val selected = currentRoute == screen.route
+                    // While on Diagnostics, keep "Settings" highlighted (we came from there).
+                    val selected = currentRoute == screen.route || (onDiagnostics && screen == Screen.Settings)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -140,9 +158,12 @@ fun BuzzwordNavHost() {
         ) {
             composable(Screen.Table.route) { TableScreen() }
             composable(Screen.Saved.route) { SavedMessagesScreen() }
-            composable(Screen.Write.route) { WriteScreen() }
+            composable(Screen.Write.route) { WriteScreen(chatViewModel) }
             composable(Screen.Receive.route) { ReceiveScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Settings.route) {
+                SettingsScreen(onOpenDiagnostics = { navController.navigate(DIAGNOSTICS_ROUTE) })
+            }
+            composable(DIAGNOSTICS_ROUTE) { DiagnosticsScreen() }
         }
     }
 }

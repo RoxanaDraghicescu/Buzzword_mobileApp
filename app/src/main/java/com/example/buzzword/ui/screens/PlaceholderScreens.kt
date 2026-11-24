@@ -11,10 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,44 +19,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-// Week 1: these screens exist so navigation works. Their content comes later.
-
 @Composable
-fun TableScreen() = ComingSoonScreen(
+fun TableScreen() = EmptyState(
     icon = Icons.Outlined.Phone,
     title = "Who's at the table",
     description = "Phones lying on the table will show up here, with a switch between Open and Secure mode.",
-    week = "week 6",
-)
+) {
+    Spacer(Modifier.height(20.dp))
+    ComingSoonPill("week 6")
+}
 
-@Composable
-fun WriteScreen() = ComingSoonScreen(
-    icon = Icons.Outlined.Edit,
-    title = "Write a message",
-    description = "Type up to 32 characters, pick who it's for, and flip your phone to send it.",
-    week = "week 2",
-)
-
-@Composable
-fun ReceiveScreen() = ComingSoonScreen(
-    icon = Icons.Outlined.Email,
-    title = "Nothing received yet",
-    description = "Messages felt through the table will appear here letter by letter, with a live graph.",
-    week = "week 2",
-)
-
-@Composable
-fun SettingsScreen() = ComingSoonScreen(
-    icon = Icons.Outlined.Settings,
-    title = "Settings",
-    description = "Choose how errors are fixed: Off, Repetition ×3 or Hamming.",
-    week = "week 5",
-)
+// ---------- Pieces reused on several screens ----------
 
 /** Big round icon used on empty screens. */
 @Composable
@@ -79,10 +56,17 @@ fun IconBadge(icon: ImageVector) {
     }
 }
 
+/** Centered icon + title + description, for screens with nothing to show yet. */
 @Composable
-private fun ComingSoonScreen(icon: ImageVector, title: String, description: String, week: String) {
+fun EmptyState(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+    extra: @Composable () -> Unit = {},
+) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -96,14 +80,40 @@ private fun ComingSoonScreen(icon: ImageVector, title: String, description: Stri
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(20.dp))
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
-            Text(
-                "Coming in $week",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-            )
-        }
+        extra()
+    }
+}
+
+/** Small rounded label: "Coming in week X". */
+@Composable
+fun ComingSoonPill(week: String) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+        Text(
+            "Coming in $week",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/** A circle with the first letter of a name, like a contact photo. */
+@Composable
+fun InitialAvatar(
+    name: String,
+    containerColor: Color,
+    contentColor: Color,
+    size: Dp = 44.dp,
+) {
+    Box(
+        Modifier.size(size).background(containerColor, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            name.trim().take(1).uppercase(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = contentColor,
+        )
     }
 }
